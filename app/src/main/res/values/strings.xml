@@ -9,4 +9,5 @@
     <string name="toast_saved_to_gallery">Scanned card saved to gallery!</string>
     <string name="toast_student_not_found">Student code not found!</string>
     <string name="toast_processing_img">Processing your image...</string>
+    <string name="toast_processing_img_still">Still processing your image...</string>
 </resources>

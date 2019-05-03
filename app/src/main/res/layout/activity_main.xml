@@ -8,6 +8,7 @@
 
 
     <LinearLayout
+        android:id="@+id/ll_main"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical">
@@ -20,8 +21,8 @@
             android:layout_marginTop="84dp"
             android:layout_marginBottom="50dp"
             android:gravity="center"
-            android:textColor="@android:color/black"
             android:text="STUDENT ID\n CARD SCANNER "
+            android:textColor="@android:color/black"
             android:textSize="30dp"
             android:textStyle="italic" />
 
@@ -63,12 +64,18 @@
                 android:id="@+id/btn_review_scanned"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-
                 android:text="View scanned card" />
 
 
         </LinearLayout>
     </LinearLayout>
 
+    <ProgressBar
+        android:id="@+id/progress_circular"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="500dp"
+        android:visibility="invisible" />
 
 </RelativeLayout>

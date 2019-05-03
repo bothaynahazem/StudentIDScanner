@@ -13,6 +13,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import org.opencv.android.OpenCVLoader;
@@ -64,6 +65,9 @@ public class MainActivity extends AppCompatActivity {
     public static double NEW_HEIGHT = 500.0;
     public static int FINAL_WIDTH = 1000;
     public static int FINAL_HEIGHT = 600;
+
+    /* For executing the img processing method on another thread as it takes time */
+    private MyAsyncTask myAsyncTask;
 
 
     //Loading the OpenCV library onto the Android app
@@ -122,31 +126,13 @@ public class MainActivity extends AppCompatActivity {
                     T.show();
                     return;
                 } else {
-                    Toast T = Toast.makeText(
-                            getApplicationContext(),
-                            R.string.toast_processing_img,
-                            Toast.LENGTH_LONG
-                    );
-                    T.show();
-
                     if (currentScannedCardPhotoPath == null) {
 
-                        processBitmapImg(capturedImg);
-
-
+                        myAsyncTask = new MyAsyncTask(getApplicationContext());
+                        myAsyncTask.execute();
                     }
 
-                    if (!scannedCardMat.empty() && !detectedFaceMat.empty()) {
-                        Intent reviewScannedCard = new Intent(MainActivity.this, ReviewScannedCard.class);
-                        reviewScannedCard.putExtra("imgURI", currentScannedCardPhotoPath);
-                        startActivity(reviewScannedCard);
-                    } else {
-                        Toast T1 = Toast.makeText(currentContext,
-                                R.string.toast_no_face_found,
-                                Toast.LENGTH_LONG);
-                        T1.show();
 
-                    }
                 }
             }
         });
@@ -253,12 +239,12 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /* Create a unique img file for the scanned card img */
-    public File createImageFileCardScanned() throws IOException {
+    public static File createImageFileCardScanned(Context context) throws IOException {
         //Img file name must be unique
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
         String imageFileName = "JPG_" + timeStamp + "SCANNED_CARD";
 
-        File storageDir = this.getExternalFilesDir(Environment.DIRECTORY_PICTURES);
+        File storageDir = context.getExternalFilesDir(Environment.DIRECTORY_PICTURES);
 
         File imageFile = File.createTempFile(imageFileName, ".jpg", storageDir);
 
@@ -268,12 +254,12 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /* Create a unique img file for the detected face img */
-    public File createImageFileFaceDetected() throws IOException {
+    public static File createImageFileFaceDetected(Context context) throws IOException {
         //Img file name must be unique
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
         String imageFileName = "JPG_" + timeStamp + "FACE";
 
-        File storageDir = this.getExternalFilesDir(Environment.DIRECTORY_PICTURES);
+        File storageDir = context.getExternalFilesDir(Environment.DIRECTORY_PICTURES);
 
         File imageFile = File.createTempFile(imageFileName, ".jpg", storageDir);
 
@@ -301,7 +287,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /*  IMG PROCESSING RELATED METHODS  */
-    public void processBitmapImg(Bitmap capturedImg) {
+    public static void processBitmapImg(Bitmap capturedImg, Context context) {
 
         //First, convert the chosen img's bitmap into type "Mat" to be processed by OpenCV
         Mat mat = new Mat();
@@ -317,7 +303,7 @@ public class MainActivity extends AppCompatActivity {
 
         //Third, call the detectFaceInCard method to get the detected face mat
         detectedFaceMat = new Mat();
-        ImgProcPipeline.detectFaceInCard(scannedCardMat, detectedFaceMat, this.getApplicationContext());
+        ImgProcPipeline.detectFaceInCard(scannedCardMat, detectedFaceMat, context);
 
         //Fourth, if the img processing pipeline was successful, the scannedCard mat is converted to bitmap to be usable by the app
         if (!scannedCardMat.empty()) {
@@ -326,7 +312,7 @@ public class MainActivity extends AppCompatActivity {
             Utils.matToBitmap(scannedCardMat, scannedCard);
         } else {
             Log.e(TAG, "Something wrong with scanning the card image");
-            Toast T = Toast.makeText(currentContext, R.string.toast_no_scanned_img, Toast.LENGTH_LONG);
+            Toast T = Toast.makeText(context, R.string.toast_no_scanned_img, Toast.LENGTH_LONG);
             T.show();
             return;
         }
@@ -338,12 +324,12 @@ public class MainActivity extends AppCompatActivity {
             Utils.matToBitmap(detectedFaceMat, detectedFace);
         } else {
             Log.e(TAG, "No face detected");
-            Toast T = Toast.makeText(currentContext, R.string.toast_no_face_found, Toast.LENGTH_LONG);
+            Toast T = Toast.makeText(context, R.string.toast_no_face_found, Toast.LENGTH_LONG);
             T.show();
         }
 
         //Sixth, the resulting bitmaps are mapped to their corresponding files
-        mapBitmapsToTheirFiles();
+        mapBitmapsToTheirFiles(context);
 
         //Seventh, the scanned card is passed through an OCR to recognize the code on the card
         recognizeText();
@@ -351,14 +337,14 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /*  put all the bitmaps in their corresponding files */
-    public void mapBitmapsToTheirFiles() {
+    public static void mapBitmapsToTheirFiles(Context context) {
         try {
-            scannedCardImgFile = createImageFileCardScanned();
+            scannedCardImgFile = createImageFileCardScanned(context);
             scannedCardImgFile = writeBitmapToFile(scannedCard, scannedCardImgFile);
 
 
             if (detectedFace != null) {
-                detectedFaceImgFile = createImageFileFaceDetected();
+                detectedFaceImgFile = createImageFileFaceDetected(context);
                 detectedFaceImgFile = writeBitmapToFile(detectedFace, detectedFaceImgFile);
             }
         } catch (IOException e) {
@@ -367,7 +353,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     //OCR method
-    public void recognizeText() {
+    public static void recognizeText() {
 
         Bitmap currentCroppedBM = ImgProcPipeline.getCroppedImg();
         recognizedStudentCode = tessOCR.getResults(currentCroppedBM);
@@ -375,3 +361,6 @@ public class MainActivity extends AppCompatActivity {
 
 
 }
+
+
+
