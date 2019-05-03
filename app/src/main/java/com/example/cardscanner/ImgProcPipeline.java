@@ -95,9 +95,7 @@ public class ImgProcPipeline {
         // same as when one sees a face in the clouds
         if (faces.length > 1) {
             for (Rect face : faces) {
-                int fw = face.width;
-                int sw = src.width();
-                if (face.width >= (src.width() * 0.1))
+                if (face.area() > rect.area())
                     rect = face.clone();
             }
         }
@@ -149,7 +147,22 @@ public class ImgProcPipeline {
         return new Pair<>(tempX, index);
     }
 
+    private static double getMaxPerimeter(List<MatOfPoint> contours) {
+        double maxPerimeter = Imgproc.arcLength(new MatOfPoint2f(contours.get(0).toArray()), true);
+        if (contours.toArray().length > 1) {
+            for (MatOfPoint c : contours) {
+                double perimeter = Imgproc.arcLength(new MatOfPoint2f(c.toArray()), true);
+                if (perimeter > maxPerimeter) {
+                    maxPerimeter = perimeter;
+                }
+            }
+        }
+        return maxPerimeter;
+    }
+
+
     private static MatOfPoint2f getFourBoundaryPts(Mat input_img, double NEW_HEIGHT) {
+
 
         //Resize the img to be able to find the contours
         double ratio = input_img.height() / NEW_HEIGHT;
@@ -178,19 +191,65 @@ public class ImgProcPipeline {
         Imgproc.findContours(edges_img, contours, hierarchy, Imgproc.RETR_EXTERNAL, Imgproc.CHAIN_APPROX_SIMPLE);
 
 
-
         MatOfPoint2f cardContour = new MatOfPoint2f();
-        for (MatOfPoint c : contours) {
-            double perimeter = Imgproc.arcLength(new MatOfPoint2f(c.toArray()), true);
-            MatOfPoint2f approximatePolygon = new MatOfPoint2f();
-            Imgproc.approxPolyDP(new MatOfPoint2f(c.toArray()), approximatePolygon, 0.02 * perimeter, true);
 
-            if (approximatePolygon.toArray().length == 4) {
-                cardContour = approximatePolygon;
-                break;
+
+        boolean cardContourFound = false; //flag
+        double maxPerimeter = getMaxPerimeter(contours);
+        int counter = 3; //try for 3 times only in order not to fall into an infinite loop
+        while (counter >= 0) {
+            for (MatOfPoint c : contours) {
+                double perimeter = Imgproc.arcLength(new MatOfPoint2f(c.toArray()), true);
+                MatOfPoint2f approximatePolygon = new MatOfPoint2f();
+                Imgproc.approxPolyDP(new MatOfPoint2f(c.toArray()), approximatePolygon, 0.02 * perimeter, true);
+
+                if (approximatePolygon.toArray().length == 4) {
+
+                    if (contours.toArray().length == 1) {
+
+                        cardContour = approximatePolygon;
+                        cardContourFound = true;
+                        counter = -1;
+                        break;
+
+                    } else {
+                        if (perimeter == maxPerimeter && maxPerimeter > 600) {
+                            cardContour = approximatePolygon;
+                            cardContourFound = true;
+                            counter = -1;
+                            break;
+                        }
+                    }
+                }
             }
+
+            if (!cardContourFound) {
+                //fill the card's segments
+                Mat filledEdges = new Mat();
+                for (int i = 0; i < contours.toArray().length; i++) {
+                    Imgproc.drawContours(edges_img, contours, i, new Scalar(255, 255, 255), Imgproc.FILLED);
+                }
+
+                //apply morphological close operation to let it have one contour only
+                Mat Kernel = Imgproc.getStructuringElement(Imgproc.CV_SHAPE_RECT, new Size(3, 3));
+                Imgproc.morphologyEx(edges_img, filledEdges, Imgproc.MORPH_CLOSE, Kernel, new Point(-1, -1), 10);
+
+
+                //find contours again after the close operation
+                contours = new ArrayList<>();
+                hierarchy = new Mat();
+                Imgproc.findContours(filledEdges, contours, hierarchy, Imgproc.RETR_EXTERNAL, Imgproc.CHAIN_APPROX_SIMPLE);
+
+                maxPerimeter = getMaxPerimeter(contours);
+                counter--;
+            }
+
         }
 
+
+        if (cardContour.empty()) {
+            return null;
+        }
 
         ArrayList<Point> resizedPoints = new ArrayList<>();
         for (Point P : cardContour.toArray()) {
@@ -335,7 +394,10 @@ public class ImgProcPipeline {
 
         MatOfPoint2f cardFourPtsContour = getFourBoundaryPts(rotatedInputImg, NEW_HEIGHT);
 
-        transformCardToRect(rotatedOrigImg, outputImg, cardFourPtsContour, FINAL_WIDTH, FINAL_HEIGHT);
+        if (cardFourPtsContour != null)
+            transformCardToRect(rotatedOrigImg, outputImg, cardFourPtsContour, FINAL_WIDTH, FINAL_HEIGHT);
+        else
+            return;
 
         currentBitmap = Bitmap.createBitmap(outputImg.width(), outputImg.height(), Bitmap.Config.ARGB_8888);
         Utils.matToBitmap(outputImg, currentBitmap);

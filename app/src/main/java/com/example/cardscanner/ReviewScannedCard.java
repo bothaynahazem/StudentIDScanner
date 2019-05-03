@@ -23,15 +23,8 @@ public class ReviewScannedCard extends AppCompatActivity {
     public static Bitmap imgBM;
     String imgPath;
     public static int cardTypeChoice = -1; //default is nothing was chosen
-    ProgressBar progressBar;
     private boolean studentCodeFound = false;
 
-
-    private void galleryAddPic(Uri contentUri) {
-        Intent mediaScanIntent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
-        mediaScanIntent.setData(contentUri);
-        this.sendBroadcast(mediaScanIntent);
-    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -109,22 +102,6 @@ public class ReviewScannedCard extends AppCompatActivity {
                 }
             }
         });
-
-//
-//        Button saveBtn = findViewById(R.id.btn_save_to_gallery);
-//
-//        saveBtn.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View v) {
-//                galleryAddPic(Uri.parse(imgPath));
-//                Toast T = Toast.makeText(
-//                        getApplicationContext(),
-//                        R.string.toast_saved_to_gallery,
-//                        Toast.LENGTH_SHORT
-//                );
-//                T.show();
-//            }
-//        });
 
 
     }

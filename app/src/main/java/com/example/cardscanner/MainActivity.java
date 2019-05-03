@@ -1,6 +1,5 @@
 package com.example.cardscanner;
 
-import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.AssetManager;
@@ -14,7 +13,6 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
-import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import org.opencv.android.OpenCVLoader;
@@ -67,10 +65,6 @@ public class MainActivity extends AppCompatActivity {
     public static int FINAL_WIDTH = 1000;
     public static int FINAL_HEIGHT = 600;
 
-    /* Progress bar to indicate the processing of the img is taking place */
-    private static ProgressBar progressBar;
-
-
 
     //Loading the OpenCV library onto the Android app
     static {
@@ -92,12 +86,9 @@ public class MainActivity extends AppCompatActivity {
         assetManager = getAssets();
         tessOCR = new tessOCR(assetManager);
 
-        progressBar = findViewById(R.id.progressBar);
-        progressBar.setVisibility(View.INVISIBLE);
-
         Button galleryBtn = findViewById(R.id.btn_choose_from_gallery);
         Button cameraBtn = findViewById(R.id.btn_take_photo);
-        Button viewScannedPhotoBtn = findViewById(R.id.btn_review_scanned);
+        final Button viewScannedPhotoBtn = findViewById(R.id.btn_review_scanned);
 
         /* Choose photo from gallery */
         galleryBtn.setOnClickListener(new View.OnClickListener() {
@@ -129,24 +120,32 @@ public class MainActivity extends AppCompatActivity {
                             R.string.no_photo_chosen,
                             Toast.LENGTH_SHORT);
                     T.show();
+                    return;
                 } else {
-                    if (currentScannedCardPhotoPath == null) {
+                    Toast T = Toast.makeText(
+                            getApplicationContext(),
+                            R.string.toast_processing_img,
+                            Toast.LENGTH_LONG
+                    );
+                    T.show();
 
-                        progressBar.setVisibility(View.VISIBLE);
+                    if (currentScannedCardPhotoPath == null) {
 
                         processBitmapImg(capturedImg);
 
-                        progressBar.setVisibility(View.GONE);
+
                     }
+
                     if (!scannedCardMat.empty() && !detectedFaceMat.empty()) {
                         Intent reviewScannedCard = new Intent(MainActivity.this, ReviewScannedCard.class);
                         reviewScannedCard.putExtra("imgURI", currentScannedCardPhotoPath);
                         startActivity(reviewScannedCard);
                     } else {
-                        Toast T = Toast.makeText(currentContext,
+                        Toast T1 = Toast.makeText(currentContext,
                                 R.string.toast_no_face_found,
                                 Toast.LENGTH_LONG);
-                        T.show();
+                        T1.show();
+
                     }
                 }
             }
