@@ -5,7 +5,7 @@
 2. Process this photo by applying several image processing techniques to "scan" it
 3. Run a face detector classifier to detect the face on the card 
 4. Run an OCR to detect the student's code on the card 
-5. Inspect the card by searching for the recognized student code present on the card in the JSON file containing students information ([parseJSON.java](app/src/main/java/com/example/cardscanner/parseJSON.java))
+5. Inspect the card by searching for the recognized student code present on the card in the JSON file containing students information ([parseJSON.java](app/src/main/java/com/example/cardscanner/parseJSON.java)) 
 
 ### Implementation details:
 - A mobile app that runs on Android, the minimum Android version supported is **Lollipop 5.0** (API **21**) 
@@ -21,3 +21,5 @@
 - Ziad Hesham
 - Marina Saad
 - Mohamed Abdelreheem
+
+PS. The JSON files have been removed for the sake of the privacy of the students.
